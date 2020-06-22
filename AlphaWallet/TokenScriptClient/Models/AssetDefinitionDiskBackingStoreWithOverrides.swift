@@ -62,6 +62,11 @@ class AssetDefinitionDiskBackingStoreWithOverrides: AssetDefinitionBackingStore 
         }
     }
 
+    func isBase(contract: AlphaWallet.Address) -> Bool {
+        //hhh implement
+        officialStore.isBase(contract: contract)
+    }
+
     func hasConflictingFile(forContract contract: AlphaWallet.Address) -> Bool {
         let official = officialStore.hasConflictingFile(forContract: contract)
         let overrides = overridesStore.hasConflictingFile(forContract: contract)

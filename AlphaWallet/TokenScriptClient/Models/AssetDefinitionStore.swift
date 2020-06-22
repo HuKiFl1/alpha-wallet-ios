@@ -120,6 +120,10 @@ class AssetDefinitionStore {
         return backingStore.isCanonicalized(contract: contract)
     }
 
+    func isBase(contract: AlphaWallet.Address) -> Bool {
+        return backingStore.isBase(contract: contract)
+    }
+
     func subscribe(_ subscribe: @escaping (_ contract: AlphaWallet.Address) -> Void) {
         subscribers.append(subscribe)
     }

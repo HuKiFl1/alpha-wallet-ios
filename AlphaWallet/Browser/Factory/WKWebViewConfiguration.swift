@@ -36,8 +36,8 @@ extension WKWebViewConfiguration {
                           currentInstance: {
                           },
                       },
-                      dataChanged: (tokens) => {
-                        console.log(\"web3.tokens.data changed. You should assign a function to `web3.tokens.dataChanged` to monitor for changes like this:\\n    `web3.tokens.dataChanged = (oldTokens, updatedTokens) => { //do something }`\")
+                      dataChanged: (old, updated, tokenCardId) => {
+                        console.log(\"web3.tokens.data changed. You should assign a function to `web3.tokens.dataChanged` to monitor for changes like this:\\n    `web3.tokens.dataChanged = (old, updated, tokenCardId) => { //do something }`\")
                       }
                   }
                   """

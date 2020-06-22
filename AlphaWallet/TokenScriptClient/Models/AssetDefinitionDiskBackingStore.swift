@@ -126,6 +126,13 @@ class AssetDefinitionDiskBackingStore: AssetDefinitionBackingStore {
 
     subscript(contract: AlphaWallet.Address) -> String? {
         get {
+            //hhh must remove this once we are able to detect that a given contract is ERC20 and should use the base (bundled) ERC20 TokenScript or the TokenScript file for this contract inherits from the base
+            //if contract.sameContract(as: "0x1d462414fe14cf489c7A21CaC78509f4bF8CD7c0") {
+            if contract.sameContract(as: Constants.erc20ActivitiesContract.address) {
+                //hhh forced unwrap
+                return R.file.erc20TokenScriptTsml().flatMap { try? String(contentsOf: $0) }!
+            }
+
             //TODO this is the bundled version of the XDai bridge. Should remove it when the repo server can server action-only TokenScripts
             if isOfficial && contract.sameContract(as: Constants.nativeCryptoAddressInDatabase) {
                 if cachedVersionOfXDaiBridgeTokenScript == nil {
@@ -165,6 +172,15 @@ class AssetDefinitionDiskBackingStore: AssetDefinitionBackingStore {
         } else {
             //We return true because then it'll be treated as needing a higher security level rather than a non-canonicalized (debug version)
             return true
+        }
+    }
+
+    func isBase(contract: AlphaWallet.Address) -> Bool {
+        //hhh implement
+        if contract.sameContract(as: Constants.erc20ActivitiesContract.address) {
+            return true
+        } else {
+            return false
         }
     }
 

@@ -1,9 +1,10 @@
 // Copyright © 2020 Stormbird PTE. LTD.
 
 import Foundation
+import BigInt
 import RealmSwift
 
-class EventInstance: Object {
+class EventActivity: Object {
     static func generatePrimaryKey(fromContract contract: AlphaWallet.Address, tokenContract: AlphaWallet.Address, server: RPCServer, eventName: String, blockNumber: Int, logIndex: Int, filter: String) -> String {
         "\(contract.eip55String)-\(tokenContract.eip55String)-\(server.chainID)-\(eventName)-\(blockNumber)-\(logIndex)-\(filter)"
     }
@@ -18,7 +19,7 @@ class EventInstance: Object {
     @objc dynamic var filter: String = ""
     @objc dynamic var json: String = "{}" {
         didSet {
-            _data = EventInstance.convertJsonToDictionary(json)
+            _data = EventActivity.convertJsonToDictionary(json)
         }
     }
 
@@ -28,15 +29,23 @@ class EventInstance: Object {
         if let _data = _data {
             return _data
         } else {
-            let value = EventInstance.convertJsonToDictionary(json)
+            let value = EventActivity.convertJsonToDictionary(json)
             _data = value
             return value
         }
     }
 
+    var tokenContractAddress: AlphaWallet.Address {
+        AlphaWallet.Address(uncheckedAgainstNullAddress: tokenContract)!
+    }
+
+    var server: RPCServer {
+        .init(chainID: chainId)
+    }
+
     convenience init(contract: AlphaWallet.Address, tokenContract: AlphaWallet.Address, server: RPCServer, eventName: String, blockNumber: Int, logIndex: Int, filter: String, json: String) {
         self.init()
-        self.primaryKey = EventInstance.generatePrimaryKey(fromContract: contract, tokenContract: tokenContract, server: server, eventName: eventName, blockNumber: blockNumber, logIndex: logIndex, filter: filter)
+        self.primaryKey = EventActivity.generatePrimaryKey(fromContract: contract, tokenContract: tokenContract, server: server, eventName: eventName, blockNumber: blockNumber, logIndex: logIndex, filter: filter)
         self.contract = contract.eip55String
         self.tokenContract = tokenContract.eip55String
         self.chainId = server.chainID
@@ -45,7 +54,7 @@ class EventInstance: Object {
         self.logIndex = logIndex
         self.filter = filter
         self.json = json
-        self._data = EventInstance.convertJsonToDictionary(json)
+        self._data = EventActivity.convertJsonToDictionary(json)
     }
 
     override static func primaryKey() -> String? {

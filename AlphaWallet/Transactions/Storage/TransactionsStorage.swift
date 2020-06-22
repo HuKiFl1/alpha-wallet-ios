@@ -26,6 +26,9 @@ class TransactionsStorage {
                 .sorted(byKeyPath: "date", ascending: false)
                 .filter("chainId = \(self.server.chainID)")
                 .filter("id != ''"))
+                .filter { (transaction: Transaction) in
+                    (transaction.operation?.contract == Constants.erc20ActivitiesContract.address.eip55String) ?? false
+                }
     }
 
     var completedObjects: [Transaction] {

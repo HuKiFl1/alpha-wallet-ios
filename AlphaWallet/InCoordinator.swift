@@ -45,10 +45,15 @@ class InCoordinator: NSObject, Coordinator {
     }
     //TODO We might not need this anymore once we stop using the vendored Web3Swift library which uses a WKWebView underneath
     private var claimOrderCoordinator: ClaimOrderCoordinator?
+    //TODO rename this generic name to reflect that it's for event instances, not for event activity
     lazy private var eventsDataStore: EventsDataStore = {
         EventsDataStore(realm: self.realm(forAccount: wallet))
     }()
+    lazy private var eventsActivityDataStore: EventsActivityDataStore = {
+        EventsActivityDataStore(realm: self.realm(forAccount: wallet))
+    }()
     private var eventSourceCoordinator: EventSourceCoordinator?
+    private var eventSourceCoordinatorForActivities: EventSourceCoordinatorForActivities?
     var tokensStorages = ServerDictionary<TokensDataStore>()
     lazy var nativeCryptoCurrencyPrices: ServerDictionary<Subscribable<Double>> = {
         return createEtherPricesSubscribablesForAllChains()
@@ -66,6 +71,9 @@ class InCoordinator: NSObject, Coordinator {
     }
     private var dappBrowserCoordinator: DappBrowserCoordinator? {
         return coordinators.compactMap { $0 as? DappBrowserCoordinator }.first
+    }
+    private var activityCoordinator: ActivitiesCoordinator? {
+        return coordinators.compactMap { $0 as? ActivitiesCoordinator }.first
     }
 
     private lazy var helpUsCoordinator: HelpUsCoordinator = {
@@ -126,6 +134,7 @@ class InCoordinator: NSObject, Coordinator {
             let tokensDataStore = strongSelf.tokensStorages[server]
             guard let token = tokensDataStore.token(forContract: contract) else { return }
             strongSelf.eventsDataStore.deleteEvents(forTokenContract: contract)
+            //hhhh need to do this for activities too?
             let _ = strongSelf.eventSourceCoordinator?.fetchEventsByTokenId(forToken: token)
         }
     }
@@ -231,6 +240,11 @@ class InCoordinator: NSObject, Coordinator {
         eventSourceCoordinator = EventSourceCoordinator(wallet: wallet, config: config, tokensStorages: tokensStorages, assetDefinitionStore: assetDefinitionStore, eventsDataStore: eventsDataStore)
     }
 
+    private func setUpEventSourceCoordinatorForActivities() {
+        eventSourceCoordinatorForActivities = EventSourceCoordinatorForActivities(wallet: wallet, config: config, tokensStorages: tokensStorages, assetDefinitionStore: assetDefinitionStore, eventsDataStore: eventsActivityDataStore)
+        eventSourceCoordinatorForActivities?.delegate = self
+    }
+
     private func setupTokenDataStores() {
         tokensStorages = .init()
         for each in RPCServer.allCases {
@@ -292,11 +306,14 @@ class InCoordinator: NSObject, Coordinator {
         setupEtherBalances()
         setupWalletSessions()
         setupCallForAssetAttributeCoordinators()
+        //TODO rename this generic name to reflect that it's for event instances, not for event activity. A few other related ones too
         setUpEventSourceCoordinator()
+        setUpEventSourceCoordinatorForActivities()
     }
 
     private func fetchEthereumEvents() {
         eventSourceCoordinator?.fetchEthereumEvents()
+        eventSourceCoordinatorForActivities?.fetchEthereumEvents()
     }
 
     private func pollEthereumEvents(tokenCollection: TokenCollection) {
@@ -367,6 +384,29 @@ class InCoordinator: NSObject, Coordinator {
         return coordinator
     }
 
+    private func createActivityCoordinator() -> ActivitiesCoordinator {
+        //hhh clean
+        //let transactionsStoragesForEnabledServers = config.enabledServers.map { transactionsStorages[$0] }
+        //let transactionsCollection = TransactionCollection(transactionsStorages: transactionsStoragesForEnabledServers)
+        let realm = self.realm(forAccount: wallet)
+        let coordinator = ActivitiesCoordinator(
+                sessions: walletSessions,
+                //hhh clean
+                //transactionsCollection: transactionsCollection,
+                keystore: keystore,
+                tokensStorages: tokensStorages,
+                assetDefinitionStore: assetDefinitionStore,
+                eventsActivityDataStore: eventsActivityDataStore,
+                eventsDataStore: eventsDataStore
+        )
+        coordinator.rootViewController.tabBarItem = UITabBarItem(title: R.string.localizable.activityTabbarItemTitle(), image: R.image.tab_transactions(), selectedImage: nil)
+        //hhh need?
+        //coordinator.delegate = self
+        coordinator.start()
+        addCoordinator(coordinator)
+        return coordinator
+    }
+
     private func createBrowserCoordinator(sessions: ServerDictionary<WalletSession>, realm: Realm, browserOnly: Bool) -> DappBrowserCoordinator {
         let coordinator = DappBrowserCoordinator(sessions: sessions, keystore: keystore, config: config, sharedRealm: realm, browserOnly: browserOnly)
         coordinator.delegate = self
@@ -404,6 +444,10 @@ class InCoordinator: NSObject, Coordinator {
         let transactionCoordinator = createTransactionCoordinator(promptBackupCoordinator: promptBackupCoordinator)
         configureNavigationControllerForLargeTitles(transactionCoordinator.navigationController)
         viewControllers.append(transactionCoordinator.navigationController)
+
+        let activityCoordinator = createActivityCoordinator()
+        configureNavigationControllerForLargeTitles(activityCoordinator.navigationController)
+        viewControllers.append(activityCoordinator.navigationController)
 
         let browserCoordinator = createBrowserCoordinator(sessions: walletSessions, realm: realm, browserOnly: false)
         viewControllers.append(browserCoordinator.navigationController)
@@ -811,5 +855,11 @@ extension InCoordinator: TransactionsStorageDelegate {
         for each in contracts {
             assetDefinitionStore.fetchXML(forContract: each)
         }
+    }
+}
+
+extension InCoordinator: EventSourceCoordinatorForActivitiesDelegate {
+    func didUpdate(inCoordinator coordinator: EventSourceCoordinatorForActivities) {
+        activityCoordinator?.reload()
     }
 }
