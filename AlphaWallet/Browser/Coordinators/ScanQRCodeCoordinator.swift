@@ -25,7 +25,10 @@ final class ScanQRCodeCoordinator: NSObject, Coordinator {
             messageText: R.string.localizable.qrCodeTitle(),
             torchTitle: R.string.localizable.light(),
             torchImage: R.image.light(),
-            chooseFromPhotoLibraryButtonImage: R.image.browse()
+            chooseFromPhotoLibraryButtonImage: R.image.browse(),
+            myQRButtonImage: R.image.qrRoundedWhite(),
+            myQRButtonTitle: R.string.localizable.qrCodeMyqrCodeTitle()
+
         )
         controller.delegate = self
         controller.title = R.string.localizable.browserScanQRCodeTitle()
@@ -35,7 +38,7 @@ final class ScanQRCodeCoordinator: NSObject, Coordinator {
     }()
 
     private lazy var navigationController: UINavigationController = {
-       let controller = UINavigationController(rootViewController: qrcodeController)
+        let controller = UINavigationController(rootViewController: qrcodeController)
         return controller
     }()
 
@@ -58,6 +61,10 @@ final class ScanQRCodeCoordinator: NSObject, Coordinator {
 }
 
 extension ScanQRCodeCoordinator: QRCodeReaderDelegate {
+
+    func reader(_ reader: QRCodeReaderViewController!, didMyQRCodeSelected sender: UIButton!) {
+        
+    }
 
     func readerDidCancel(_ reader: QRCodeReaderViewController!) {
         reader.stopScanning()

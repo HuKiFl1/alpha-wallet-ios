@@ -449,3 +449,4 @@
 "wallet.security.level.orange" = "NOT LOCKED";
 "wallet.security.level.green" = "100% SECURE";
 "settings.general.title" = "一般";
+"qrCode.myqrCode.title" = "My QR Code";
